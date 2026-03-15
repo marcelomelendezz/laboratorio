@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SOMOS · Laboratorio</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Nunito:wght@700;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;height:100%;overflow:hidden;user-select:none;
+  background:#06080f;}
+#app{display:flex;flex-direction:column;width:100%;height:100%;
+  font-family:'Nunito',sans-serif;}
+
+/* ── TOP BAR ── */
+#topbar{
+  flex-shrink:0;display:flex;align-items:center;gap:8px;
+  padding:5px 10px;background:rgba(0,0,0,0.6);
+  border-bottom:1px solid rgba(0,200,255,0.2);
+}
+#topbar h1{font-family:'Orbitron',monospace;font-size:clamp(9px,2.5vw,13px);
+  color:#00ccff;letter-spacing:2px;white-space:nowrap;}
+#result-badge{
+  flex:1;padding:4px 10px;border-radius:20px;font-size:clamp(9px,2.5vw,12px);
+  font-weight:900;text-align:center;letter-spacing:1px;
+  background:rgba(0,200,255,0.08);border:1px solid rgba(0,200,255,0.2);
+  color:rgba(255,255,255,0.4);transition:all 0.3s;min-width:0;
+}
+#result-badge.glow{background:rgba(0,200,255,0.15);border-color:rgba(0,200,255,0.5);color:#fff;}
+#clearBtn{
+  padding:4px 10px;border-radius:8px;cursor:pointer;font-size:clamp(8px,2vw,11px);
+  font-family:'Nunito',sans-serif;font-weight:900;border:1px solid rgba(255,100,100,0.3);
+  background:rgba(255,50,50,0.08);color:#ff8888;white-space:nowrap;
+}
+#clearBtn:active{background:rgba(255,50,50,0.2);}
+
+/* ── MAIN ── */
+#main{flex:1;min-height:0;display:flex;flex-direction:row;overflow:hidden;}
+
+/* ── LEFT: ELEMENTS SHELF ── */
+#shelf{
+  flex-shrink:0;width:clamp(70px,22vw,110px);
+  background:rgba(0,0,0,0.4);border-right:1px solid rgba(0,200,255,0.12);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+#shelf-title{
+  padding:5px 6px;font-size:7px;font-weight:900;letter-spacing:2px;
+  color:rgba(0,200,255,0.5);font-family:'Orbitron',monospace;text-align:center;
+  border-bottom:1px solid rgba(0,200,255,0.1);
+}
+#elements-list{flex:1;overflow-y:auto;padding:4px;display:flex;flex-direction:column;gap:3px;}
+#elements-list::-webkit-scrollbar{width:2px;}
+#elements-list::-webkit-scrollbar-thumb{background:rgba(0,200,255,0.2);}
+.elem{
+  display:flex;align-items:center;gap:5px;padding:5px 6px;border-radius:8px;
+  cursor:pointer;border:1.5px solid transparent;transition:all 0.1s;
+  background:rgba(255,255,255,0.03);
+}
+.elem:hover{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.15);}
+.elem:active{transform:scale(0.94);}
+.elem .eicon{font-size:16px;flex-shrink:0;}
+.elem .ename{font-size:clamp(7px,2vw,9px);font-weight:900;color:rgba(255,255,255,0.7);line-height:1.1;}
+.elem .etag{font-size:6px;font-weight:700;border-radius:3px;padding:1px 3px;margin-top:1px;display:inline-block;}
+
+/* ── CENTER: LAB BENCH ── */
+#bench{
+  flex:1;min-width:0;position:relative;overflow:hidden;
+  background:radial-gradient(ellipse at 50% 80%,#0a0e18 0%,#060810 100%);
+}
+#bench-canvas{display:block;touch-action:none;}
+
+/* ── RIGHT: TOOLS + LOG ── */
+#sidebar{
+  flex-shrink:0;width:clamp(80px,24vw,120px);
+  display:flex;flex-direction:column;
+  background:rgba(0,0,0,0.4);border-left:1px solid rgba(0,200,255,0.12);
+}
+#tools-section{
+  flex-shrink:0;padding:5px;border-bottom:1px solid rgba(0,200,255,0.1);
+  display:flex;flex-direction:column;gap:3px;
+}
+#tools-title{font-size:7px;font-weight:900;letter-spacing:2px;
+  color:rgba(0,200,255,0.5);font-family:'Orbitron',monospace;text-align:center;padding:2px 0 4px;}
+.tool-btn{
+  padding:6px 4px;border-radius:8px;cursor:pointer;
+  font-size:clamp(7px,2vw,9px);font-weight:900;text-align:center;
+  border:1.5px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);
+  color:rgba(255,255,255,0.6);transition:all 0.1s;display:flex;
+  align-items:center;justify-content:center;gap:4px;
+}
+.tool-btn:hover{background:rgba(255,255,255,0.1);}
+.tool-btn.active{border-color:#00ccff;background:rgba(0,200,255,0.15);color:#00ccff;
+  box-shadow:0 0 8px rgba(0,200,255,0.2);}
+.tool-btn:active{transform:scale(0.95);}
+
+#log-section{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;}
+#log-title{flex-shrink:0;font-size:7px;font-weight:900;letter-spacing:2px;
+  color:rgba(0,200,255,0.5);font-family:'Orbitron',monospace;text-align:center;
+  padding:5px 6px;border-bottom:1px solid rgba(0,200,255,0.1);}
+#log{flex:1;overflow-y:auto;padding:4px;display:flex;flex-direction:column;gap:3px;}
+#log::-webkit-scrollbar{width:2px;}
+#log::-webkit-scrollbar-thumb{background:rgba(0,200,255,0.15);}
+.log-entry{
+  font-size:clamp(7px,1.8vw,8.5px);font-weight:700;padding:3px 5px;border-radius:5px;
+  border-left:2px solid;line-height:1.3;
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="topbar">
+    <h1>🔬 SOMOS LAB</h1>
+    <div id="result-badge">Añade elementos al matraz...</div>
+    <button id="clearBtn">🗑 Limpiar</button>
+  </div>
+  <div id="main">
+    <div id="shelf">
+      <div id="shelf-title">ELEMENTOS</div>
+      <div id="elements-list"></div>
+    </div>
+    <div id="bench">
+      <canvas id="bench-canvas" tabindex="0"></canvas>
+    </div>
+    <div id="sidebar">
+      <div id="tools-section">
+        <div id="tools-title">HERRAMIENTAS</div>
+        <button class="tool-btn active" id="tool-stir" title="Revolver">🌀 Revolver</button>
+        <button class="tool-btn" id="tool-heat" title="Calentar">🔥 Calentar</button>
+        <button class="tool-btn" id="tool-cool" title="Enfriar">❄️ Enfriar</button>
+        <button class="tool-btn" id="tool-shock" title="Electrizar">⚡ Electrizar</button>
+        <button class="tool-btn" id="tool-shake" title="Agitar">📳 Agitar</button>
+        <button class="tool-btn" id="tool-pour" title="Verter">💧 Verter</button>
+      </div>
+      <div id="log-section">
+        <div id="log-title">REGISTRO</div>
+        <div id="log"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CANVAS SETUP ──────────────────────────────────────────
+const canvas=document.getElementById('bench-canvas');
+const ctx=canvas.getContext('2d');
+const bench=document.getElementById('bench');
+let W,H;
+function resize(){
+  W=canvas.width=bench.clientWidth;
+  H=canvas.height=bench.clientHeight;
+}
+window.addEventListener('load',()=>setTimeout(()=>{resize();initLab();startLoop();},80));
+window.addEventListener('resize',()=>{resize();});
+
+// ── ELEMENTS DATABASE ─────────────────────────────────────
+const ELEMENTS=[
+  // Liquids
+  {id:'water',    name:'Agua',      icon:'💧',color:'#4488ff',color2:'#88aaff',type:'liquid',  tag:'LÍQUIDO',tagCol:'#4488ff'},
+  {id:'acid',     name:'Ácido',     icon:'🧪',color:'#88ff00',color2:'#ccff44',type:'liquid',  tag:'LÍQUIDO',tagCol:'#88ff00'},
+  {id:'oil',      name:'Aceite',    icon:'🫙',color:'#ddaa22',color2:'#ffdd44',type:'liquid',  tag:'LÍQUIDO',tagCol:'#ddaa22'},
+  {id:'mercury',  name:'Mercurio',  icon:'⚗️', color:'#aaaacc',color2:'#ddddee',type:'liquid',  tag:'METAL',  tagCol:'#aaaacc'},
+  {id:'lava',     name:'Lava',      icon:'🌋',color:'#ff4400',color2:'#ff8800',type:'liquid',  tag:'LÍQUIDO',tagCol:'#ff4400'},
+  {id:'potion',   name:'Poción',    icon:'🧴',color:'#cc44ff',color2:'#ee88ff',type:'liquid',  tag:'MÁGICO', tagCol:'#cc44ff'},
+  // Powders / Solids
+  {id:'salt',     name:'Sal',       icon:'🧂',color:'#ffffff',color2:'#dddddd',type:'powder',  tag:'POLVO',  tagCol:'#aaaaaa'},
+  {id:'sugar',    name:'Azúcar',    icon:'🍬',color:'#ffeecc',color2:'#fff8dd',type:'powder',  tag:'POLVO',  tagCol:'#ffcc44'},
+  {id:'iron',     name:'Hierro',    icon:'⚙️', color:'#778899',color2:'#99aabb',type:'solid',   tag:'METAL',  tagCol:'#778899'},
+  {id:'gold',     name:'Oro',       icon:'🥇',color:'#ffcc00',color2:'#ffee44',type:'solid',   tag:'METAL',  tagCol:'#ffcc00'},
+  {id:'carbon',   name:'Carbón',    icon:'⬛',color:'#222222',color2:'#444444',type:'powder',  tag:'POLVO',  tagCol:'#666666'},
+  {id:'crystal',  name:'Cristal',   icon:'💎',color:'#88ffee',color2:'#ccffff',type:'solid',   tag:'MINERAL',tagCol:'#88ffee'},
+  // Gases
+  {id:'oxygen',   name:'Oxígeno',   icon:'💨',color:'#aaddff',color2:'#ddeeff',type:'gas',     tag:'GAS',    tagCol:'#aaddff'},
+  {id:'nitrogen', name:'Nitrógeno', icon:'🌬️',color:'#8888ff',color2:'#aaaaff',type:'gas',     tag:'GAS',    tagCol:'#8888ff'},
+  {id:'chlorine', name:'Cloro',     icon:'☣️', color:'#aaff44',color2:'#ccff88',type:'gas',     tag:'GAS',    tagCol:'#88dd00'},
+  // Special
+  {id:'fire',     name:'Fuego',     icon:'🔥',color:'#ff6600',color2:'#ffdd00',type:'energy',  tag:'ENERGÍA',tagCol:'#ff6600'},
+  {id:'lightning',name:'Rayo',      icon:'⚡',color:'#ffee00',color2:'#ffffff',type:'energy',  tag:'ENERGÍA',tagCol:'#ffee00'},
+  {id:'magic',    name:'Magia',     icon:'✨',color:'#ff44ff',color2:'#ffaaff',type:'energy',  tag:'MÁGICO', tagCol:'#ff44ff'},
+  {id:'dark',     name:'Sombra',    icon:'🌑',color:'#220044',color2:'#550088',type:'energy',  tag:'OSCURO', tagCol:'#8844ff'},
+  {id:'stardust', name:'Polvo Estelar',icon:'🌟',color:'#ffaa44',color2:'#ffffaa',type:'energy',tag:'CÓSMICO',tagCol:'#ffaa44'},
+  // Bio
+  {id:'slime',    name:'Limo',      icon:'🫧',color:'#44ff44',color2:'#88ff88',type:'bio',     tag:'BIO',    tagCol:'#44ff44'},
+  {id:'spore',    name:'Espora',    icon:'🍄',color:'#cc8844',color2:'#ffaa66',type:'bio',     tag:'BIO',    tagCol:'#cc8844'},
+  {id:'seed',     name:'Semilla',   icon:'🌱',color:'#88aa44',color2:'#aaccaa',type:'bio',     tag:'BIO',    tagCol:'#88aa44'},
+  {id:'venom',    name:'Veneno',    icon:'🐍',color:'#44cc22',color2:'#88ff44',type:'bio',     tag:'BIO',    tagCol:'#44cc22'},
+];
+
+// ── REACTIONS DATABASE ─────────────────────────────────────
+// Each reaction: ingredients (set), tool trigger, result
+const REACTIONS=[
+  // Classic chemistry
+  {needs:['water','salt'],       tool:null,      name:'Agua Salada',    icon:'🧂',color:'#88aacc',desc:'Solución salina simple.',           rarity:'common'},
+  {needs:['water','sugar'],      tool:null,      name:'Jarabe',         icon:'🍯',color:'#ffaa44',desc:'Dulce y pegajoso.',                  rarity:'common'},
+  {needs:['water','acid'],       tool:'stir',    name:'Ácido Diluido',  icon:'🧪',color:'#aaff44',desc:'Menos corrosivo, aún reactivo.',     rarity:'common'},
+  {needs:['acid','iron'],        tool:null,      name:'Sal de Hierro',  icon:'⚗️', color:'#88aa44',desc:'Reacción de oxidación.',             rarity:'common'},
+  {needs:['water','carbon'],     tool:'heat',    name:'Tinta China',    icon:'🖋️', color:'#223344',desc:'Pigmento ancestral.',               rarity:'common'},
+  {needs:['oil','water'],        tool:'stir',    name:'Emulsión',       icon:'🫙',color:'#eecc88',desc:'Mezcla inestable de aceite y agua.',  rarity:'common'},
+  {needs:['salt','acid'],        tool:null,      name:'Clorhídrico',    icon:'💨',color:'#ccff88',desc:'Gas tóxico. ¡Cuidado!',              rarity:'uncommon'},
+  {needs:['iron','oxygen'],      tool:'heat',    name:'Óxido',          icon:'🔴',color:'#cc4422',desc:'Hierro oxidado, rojo y frágil.',     rarity:'common'},
+  {needs:['carbon','oxygen'],    tool:'heat',    name:'CO₂',            icon:'💨',color:'#aaaaaa',desc:'Dióxido de carbono.',                rarity:'common'},
+  {needs:['water','lightning'],  tool:null,      name:'Agua Ionizada',  icon:'⚡',color:'#88ddff',desc:'H₂O energizada.',                   rarity:'uncommon'},
+  {needs:['lava','water'],       tool:null,      name:'Obsidiana',      icon:'⬛',color:'#112233',desc:'Vidrio volcánico negro.',            rarity:'uncommon'},
+  {needs:['gold','acid'],        tool:null,      name:'Agua Regia',     icon:'👑',color:'#ffdd22',desc:'Disuelve metales nobles.',           rarity:'rare'},
+  {needs:['mercury','gold'],     tool:'heat',    name:'Amalgama',       icon:'🔮',color:'#ccddaa',desc:'Aleación de mercurio y oro.',        rarity:'uncommon'},
+  {needs:['iron','carbon'],      tool:'heat',    name:'Acero',          icon:'⚔️', color:'#aabbcc',desc:'Metal más duro y resistente.',     rarity:'uncommon'},
+  {needs:['nitrogen','oxygen'],  tool:'shock',   name:'Óxido Nítrico',  icon:'💨',color:'#ffcc88',desc:'Gas irritante, NO.',                rarity:'uncommon'},
+  // Magical
+  {needs:['water','magic'],      tool:null,      name:'Agua Bendita',   icon:'✨',color:'#aaffee',desc:'Pura energía sanadora.',             rarity:'uncommon'},
+  {needs:['fire','magic'],       tool:null,      name:'Fuego Eterno',   icon:'🔮',color:'#ff88ff',desc:'Llama que nunca se apaga.',          rarity:'rare'},
+  {needs:['dark','magic'],       tool:null,      name:'Magia Oscura',   icon:'🌑',color:'#8822cc',desc:'Poder de las sombras.',             rarity:'rare'},
+  {needs:['crystal','magic'],    tool:null,      name:'Gema Mágica',    icon:'💎',color:'#ff88ee',desc:'Cristal cargado de poder.',         rarity:'rare'},
+  {needs:['stardust','magic'],   tool:null,      name:'Polvo Cósmico',  icon:'🌌',color:'#ffccaa',desc:'Material del universo mismo.',      rarity:'legendary'},
+  {needs:['potion','fire'],      tool:null,      name:'Elixir Ardiente',icon:'🔥',color:'#ff6644',desc:'Poción explosiva y volátil.',        rarity:'rare'},
+  {needs:['potion','dark'],      tool:null,      name:'Elixir Oscuro',  icon:'🧛',color:'#440088',desc:'Brebaje de poder prohibido.',        rarity:'rare'},
+  {needs:['potion','lightning'], tool:null,      name:'Elixir Eléctrico',icon:'⚡',color:'#ffee88',desc:'¡Zap instantáneo!',               rarity:'uncommon'},
+  {needs:['stardust','crystal'], tool:null,      name:'Cristal Astral', icon:'🌟',color:'#ffddaa',desc:'Gema del cosmos.',                  rarity:'legendary'},
+  {needs:['magic','dark','stardust'],tool:'stir',name:'Singularidad',   icon:'🕳️', color:'#000022',desc:'Un agujero negro en miniatura.',   rarity:'legendary'},
+  // Bio reactions
+  {needs:['water','slime'],      tool:null,      name:'Limo Acuoso',    icon:'🫧',color:'#66dd88',desc:'Limo muy resbaladizo.',             rarity:'common'},
+  {needs:['slime','acid'],       tool:null,      name:'Proto-Célula',   icon:'🦠',color:'#44ff88',desc:'Primeros signos de vida.',          rarity:'rare'},
+  {needs:['spore','water'],      tool:'heat',    name:'Hongo Gigante',  icon:'🍄',color:'#cc7744',desc:'Crece rápidamente.',               rarity:'uncommon'},
+  {needs:['seed','water'],       tool:'heat',    name:'Planta Mágica',  icon:'🌿',color:'#44cc22',desc:'Brota al instante.',               rarity:'common'},
+  {needs:['seed','magic'],       tool:null,      name:'Árbol del Mundo',icon:'🌳',color:'#228844',desc:'Árbol inmenso que toca el cielo.', rarity:'legendary'},
+  {needs:['venom','magic'],      tool:null,      name:'Veneno Arcano',  icon:'☠️', color:'#88ff00',desc:'Paralizante y mágico.',            rarity:'rare'},
+  {needs:['slime','lightning'],  tool:null,      name:'Ooze Eléctrico', icon:'⚡',color:'#aaff44',desc:'¡El limo cobra vida!',             rarity:'rare'},
+  {needs:['spore','dark'],       tool:null,      name:'Hongo Oscuro',   icon:'🌑',color:'#442255',desc:'Crece en las sombras.',            rarity:'rare'},
+  // Explosive / dramatic
+  {needs:['acid','lava'],        tool:null,      name:'EXPLOSIÓN',      icon:'💥',color:'#ff4400',desc:'¡BOOM! Reacción violenta.',         rarity:'dramatic'},
+  {needs:['water','fire'],       tool:null,      name:'Vapor',          icon:'💨',color:'#ddddee',desc:'El agua se evapora.',              rarity:'common'},
+  {needs:['lightning','lava'],   tool:null,      name:'Plasma',         icon:'🌟',color:'#ff88ff',desc:'El cuarto estado de la materia.',  rarity:'legendary'},
+  {needs:['nitrogen','lava'],    tool:'cool',    name:'Nitrógeno Líquido',icon:'🧊',color:'#88ccff',desc:'Súper frío extremo.',           rarity:'rare'},
+  {needs:['chlorine','water'],   tool:null,      name:'Ácido Cloro',    icon:'☣️', color:'#aaee44',desc:'Muy corrosivo.',                  rarity:'uncommon'},
+  {needs:['gold','magic','stardust'],tool:'heat',name:'Piedra Filosofal',icon:'🏆',color:'#ffdd00',desc:'El sueño de los alquimistas.',   rarity:'legendary'},
+  {needs:['iron','lightning','magic'],tool:'shock',name:'Golem de Hierro',icon:'🤖',color:'#8899aa',desc:'¡El metal cobra vida!',         rarity:'legendary'},
+  {needs:['seed','stardust','magic'],tool:'heat',name:'Flor Estelar',   icon:'⭐',color:'#ffffaa',desc:'Florece una vez cada 1000 años.', rarity:'legendary'},
+  {needs:['dark','lightning','magic'],tool:'shock',name:'Tormenta Caótica',icon:'🌪️',color:'#6622aa',desc:'Energía descontrolada.',      rarity:'legendary'},
+  {needs:['water','acid','fire'], tool:'stir',   name:'Reacción Ácida', icon:'💥',color:'#ffaa00',desc:'Mezcla inestable ardiente.',       rarity:'dramatic'},
+  {needs:['slime','spore','magic'],tool:'heat',  name:'Vida Artificial',icon:'👾',color:'#44ff88',desc:'¡Nanotecnología orgánica!',       rarity:'legendary'},
+  {needs:['mercury','lightning'], tool:'shock',  name:'Metal Vivo',     icon:'🔮',color:'#cceecc',desc:'Mercurio que fluye sin control.', rarity:'rare'},
+];
+
+const RARITY_COLS={common:'#888888',uncommon:'#4488ff',rare:'#aa44ff',legendary:'#ffdd00',dramatic:'#ff4400'};
+const RARITY_NAMES={common:'Común',uncommon:'Raro',rare:'Épico',legendary:'¡LEGENDARIO!',dramatic:'¡EXPLOSIÓN!'};
+
+// ── LAB STATE ─────────────────────────────────────────────
+let flask={elements:[],heat:0,stir:0,electric:0};
+let particles=[];
+let bubbles=[];
+let currentReaction=null;
+let activeTool='stir';
+let toolActive=false;
+let stirAngle=0;
+let shakeX=0,shakeVX=0;
+let discovered=new Set();
+let animT=0;
+
+// Flask geometry (computed on resize)
+let FX,FY,FW,FH,NECK_Y,NECK_W;
+function getFlaskGeometry(){
+  FX=W/2; FY=H*0.56;
+  FW=Math.min(W*0.38,H*0.35);
+  FH=FW*1.05;
+  NECK_Y=FY-FH*0.52;
+  NECK_W=FW*0.26;
+}
+
+// ── ELEMENT SHELF ─────────────────────────────────────────
+function buildShelf(){
+  const list=document.getElementById('elements-list');
+  list.innerHTML='';
+  ELEMENTS.forEach(el=>{
+    const div=document.createElement('div');
+    div.className='elem';
+    div.style.borderColor=el.color+'33';
+    div.innerHTML=`<span class="eicon">${el.icon}</span>
+      <div><div class="ename">${el.name}</div>
+      <span class="etag" style="background:${el.tagCol}22;color:${el.tagCol}">${el.tag}</span></div>`;
+    div.addEventListener('click',()=>addElement(el));
+    div.addEventListener('touchstart',e=>{e.preventDefault();addElement(el);},{passive:false});
+    list.appendChild(div);
+  });
+}
+
+function addElement(el){
+  if(flask.elements.length>=6){addLog('⚠️ El matraz está lleno (máx 6)','#ff8888');return;}
+  if(flask.elements.find(e=>e.id===el.id)){addLog(`↩️ Ya está: ${el.icon} ${el.name}`,'#ffaa44');return;}
+  flask.elements.push({...el});
+  // Splash effect
+  spawnSplash(el.color);
+  addLog(`+ ${el.icon} ${el.name} añadido`,'#88ffaa');
+  checkReaction();
+  updateBadge();
+}
+
+function spawnSplash(col){
+  for(let i=0;i<12;i++){
+    const a=Math.random()*Math.PI*2,sp=1+Math.random()*4;
+    particles.push({x:FX,y:FY-FH*0.15,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-2,
+      r:2+Math.random()*4,life:25+Math.random()*20,maxLife:45,color:col,type:'splash'});
+  }
+}
+
+// ── REACTION CHECK ────────────────────────────────────────
+function checkReaction(){
+  const ids=new Set(flask.elements.map(e=>e.id));
+  let best=null;
+  REACTIONS.forEach(r=>{
+    if(r.needs.every(n=>ids.has(n))){
+      if(!r.tool||r.tool===activeTool){
+        // More ingredients = better match
+        if(!best||r.needs.length>best.needs.length) best=r;
+      }
+    }
+  });
+  if(best&&best!==currentReaction){
+    currentReaction=best;
+    triggerReaction(best);
+  } else if(!best){
+    currentReaction=null;
+    updateBadge();
+  }
+}
+
+function triggerReaction(r){
+  const col=RARITY_COLS[r.rarity]||'#ffffff';
+  // Big particle burst
+  for(let i=0;i<30;i++){
+    const a=Math.random()*Math.PI*2,sp=1+Math.random()*6;
+    particles.push({x:FX,y:FY-FH*0.2,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-3,
+      r:2+Math.random()*6,life:40+Math.random()*30,maxLife:70,
+      color:i%3===0?r.color:i%3===1?col:'#ffffff',type:'reaction'});
+  }
+  // Bubbles
+  for(let i=0;i<8;i++){
+    bubbles.push({x:FX+(Math.random()-0.5)*FW*0.5,y:FY-FH*0.05,
+      r:4+Math.random()*8,vy:-(0.5+Math.random()*1.5),
+      color:r.color,life:60+Math.random()*40});
+  }
+  if(r.rarity==='dramatic'||r.rarity==='legendary') shakeVX=12;
+  addLog(`${r.icon} ¡${r.name}! — ${r.desc}`,col,r.rarity);
+  if(!discovered.has(r.name)){
+    discovered.add(r.name);
+    addLog(`🏆 NUEVO DESCUBRIMIENTO: ${r.name}!`,'#ffdd00');
+  }
+  updateBadge(r);
+}
+
+function updateBadge(r){
+  const badge=document.getElementById('result-badge');
+  if(r){
+    const col=RARITY_COLS[r.rarity];
+    badge.textContent=`${r.icon} ${r.name} · ${RARITY_NAMES[r.rarity]}`;
+    badge.style.background=col+'22';
+    badge.style.borderColor=col+'88';
+    badge.style.color='#fff';
+    badge.style.boxShadow=`0 0 12px ${col}44`;
+    badge.classList.add('glow');
+  } else if(flask.elements.length===0){
+    badge.textContent='Añade elementos al matraz...';
+    badge.style.background='rgba(0,200,255,0.08)';
+    badge.style.borderColor='rgba(0,200,255,0.2)';
+    badge.style.color='rgba(255,255,255,0.4)';
+    badge.style.boxShadow='none';
+    badge.classList.remove('glow');
+  } else {
+    badge.textContent=flask.elements.map(e=>e.icon).join(' + ')+' = ?';
+    badge.style.background='rgba(255,255,255,0.05)';
+    badge.style.borderColor='rgba(255,255,255,0.15)';
+    badge.style.color='rgba(255,255,255,0.6)';
+    badge.style.boxShadow='none';
+    badge.classList.remove('glow');
+  }
+}
+
+// ── LOG ───────────────────────────────────────────────────
+function addLog(msg,col='#888888',rarity=''){
+  const log=document.getElementById('log');
+  const div=document.createElement('div');
+  div.className='log-entry';
+  div.style.borderLeftColor=col;
+  div.style.background=col+'11';
+  div.style.color=col;
+  if(rarity==='legendary') div.style.animation='none';
+  div.textContent=msg;
+  log.prepend(div);
+  while(log.children.length>40)log.removeChild(log.lastChild);
+}
+
+// ── TOOLS ─────────────────────────────────────────────────
+document.querySelectorAll('.tool-btn').forEach(btn=>{
+  const tool=btn.id.replace('tool-','');
+  btn.addEventListener('mousedown',e=>{ e.preventDefault(); startTool(tool,btn); });
+  btn.addEventListener('touchstart',e=>{ e.preventDefault(); startTool(tool,btn); },{passive:false});
+  btn.addEventListener('mouseup',  ()=>stopTool());
+  btn.addEventListener('touchend', ()=>stopTool());
+  btn.addEventListener('mouseleave',()=>{ if(toolActive)stopTool(); });
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    activeTool=tool;
+  });
+});
+
+function startTool(tool,btn){
+  toolActive=true;
+  document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  activeTool=tool;
+  applyTool(tool);
+  checkReaction();
+}
+function stopTool(){ toolActive=false; }
+
+function applyTool(tool){
+  if(flask.elements.length===0) return;
+  if(tool==='stir'){
+    stirAngle+=Math.PI*0.5;
+    for(let i=0;i<8;i++){const a=stirAngle+i*Math.PI/4;particles.push({x:FX+Math.cos(a)*FW*0.22,y:FY-FH*0.1+Math.sin(a)*FH*0.1,vx:Math.cos(a+Math.PI/2)*2,vy:Math.sin(a+Math.PI/2)*2-1,r:2+Math.random()*3,life:20,maxLife:20,color:flask.elements[0]?.color||'#fff',type:'stir'});}
+    addLog('🌀 Revolviendo...','#00ccff');
+  } else if(tool==='heat'){
+    flask.heat=Math.min(flask.heat+25,100);
+    for(let i=0;i<10;i++){particles.push({x:FX+(Math.random()-0.5)*FW*0.5,y:FY-FH*0.05,vx:(Math.random()-0.5)*1.5,vy:-(1+Math.random()*3),r:3+Math.random()*4,life:30+Math.random()*20,maxLife:50,color:['#ff6600','#ff8800','#ffdd00'][Math.floor(Math.random()*3)],type:'heat'});}
+    addLog(`🔥 Calentando... (${flask.heat}°)`,'#ff6600');
+  } else if(tool==='cool'){
+    flask.heat=Math.max(flask.heat-20,0);
+    for(let i=0;i<8;i++){particles.push({x:FX+(Math.random()-0.5)*FW*0.6,y:FY-FH*(0.05+Math.random()*0.3),vx:(Math.random()-0.5)*0.8,vy:(Math.random()-0.5)*0.8,r:3+Math.random()*4,life:35,maxLife:35,color:'#88ddff',type:'ice'});}
+    addLog(`❄️ Enfriando... (${flask.heat}°)`,'#88ddff');
+  } else if(tool==='shock'){
+    flask.electric=Math.min(flask.electric+30,100);
+    for(let i=0;i<5;i++){const ex=FX+(Math.random()-0.5)*FW*0.6,ey=FY-FH*(0.1+Math.random()*0.4);particles.push({x:ex,y:ey-30,vx:0,vy:0,r:0,life:8,maxLife:8,color:'#ffee44',type:'lightning',ex,ey});}
+    addLog(`⚡ ¡Electrizando! (${flask.electric}V)`,'#ffee44');
+  } else if(tool==='shake'){
+    shakeVX=8+Math.random()*6;
+    for(let i=0;i<15;i++){particles.push({x:FX+(Math.random()-0.5)*FW,y:FY-FH*Math.random()*0.5,vx:(Math.random()-0.5)*5,vy:-(1+Math.random()*4),r:2+Math.random()*4,life:20+Math.random()*15,maxLife:35,color:flask.elements[Math.floor(Math.random()*flask.elements.length)]?.color||'#fff',type:'shake'});}
+    addLog('📳 ¡Agitando!','#cc88ff');
+  } else if(tool==='pour'){
+    // Pour adds a water-like liquid stream
+    for(let i=0;i<15;i++){particles.push({x:FX+(Math.random()-0.5)*FW*0.1,y:FY-FH*0.7-i*8,vx:(Math.random()-0.5)*0.5,vy:2+Math.random()*2,r:3+Math.random()*3,life:30,maxLife:30,color:'#4488ff',type:'pour'});}
+    addLog('💧 Vertiendo...','#4488ff');
+  }
+}
+
+// ── CLEAR ─────────────────────────────────────────────────
+document.getElementById('clearBtn').addEventListener('click',()=>{
+  flask={elements:[],heat:0,stir:0,electric:0};
+  currentReaction=null;
+  particles=[];bubbles=[];
+  updateBadge();
+  addLog('🗑 Matraz limpiado','#888888');
+});
+
+// ── CANVAS INTERACTION ────────────────────────────────────
+let pointerDown=false;
+function getCanvasXY(e){
+  const r=canvas.getBoundingClientRect();
+  const s=e.touches?e.touches[0]:e;
+  return{x:(s.clientX-r.left)*(W/r.width),y:(s.clientY-r.top)*(H/r.height)};
+}
+canvas.addEventListener('mousedown',e=>{pointerDown=true;const p=getCanvasXY(e);onCanvasDown(p.x,p.y);});
+canvas.addEventListener('mousemove',e=>{if(pointerDown){const p=getCanvasXY(e);onCanvasMove(p.x,p.y);}});
+canvas.addEventListener('mouseup',()=>pointerDown=false);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();pointerDown=true;const p=getCanvasXY(e);onCanvasDown(p.x,p.y);},{passive:false});
+canvas.addEventListener('touchmove',e=>{e.preventDefault();if(pointerDown){const p=getCanvasXY(e);onCanvasMove(p.x,p.y);}},{passive:false});
+canvas.addEventListener('touchend',()=>pointerDown=false);
+
+function onCanvasDown(x,y){
+  // Click inside flask = apply current tool
+  if(isInFlask(x,y)) applyTool(activeTool);
+}
+function onCanvasMove(x,y){
+  if(isInFlask(x,y)&&activeTool==='stir'){
+    stirAngle+=0.15;
+    spawnStirParticle();
+  }
+}
+function isInFlask(x,y){
+  return Math.pow((x-FX)/FW,2)+Math.pow((y-FY)/FH,2)<0.28;
+}
+function spawnStirParticle(){
+  if(flask.elements.length===0)return;
+  const col=flask.elements[Math.floor(Math.random()*flask.elements.length)].color;
+  const a=Math.random()*Math.PI*2,r=Math.random()*FW*0.35;
+  particles.push({x:FX+Math.cos(a)*r,y:FY+Math.sin(a)*r*0.5,vx:Math.cos(a+Math.PI/2)*2,vy:Math.sin(a+Math.PI/2)*2-0.5,r:2+Math.random()*3,life:15,maxLife:15,color:col,type:'stir'});
+}
+
+// ── DRAW ──────────────────────────────────────────────────
+function startLoop(){ requestAnimationFrame(function loop(){update();draw();requestAnimationFrame(loop);}); }
+
+function update(){
+  animT+=0.03;
+  getFlaskGeometry();
+  // Shake decay
+  shakeX+=shakeVX;shakeVX*=-0.7;if(Math.abs(shakeVX)<0.05)shakeVX=0;
+  if(Math.abs(shakeX)>0.5)shakeX*=0.6;else shakeX=0;
+  // Tool auto-apply when held
+  if(toolActive&&animT%0.3<0.03) checkReaction();
+  // Particles
+  particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.12;p.life--;});
+  particles=particles.filter(p=>p.life>0);
+  // Bubbles
+  bubbles.forEach(b=>{b.y+=b.vy;b.life--;b.r+=0.03;});
+  bubbles=bubbles.filter(b=>b.life>0&&b.y>FY-FH*0.65);
+  // Auto bubble spawn when there are elements
+  if(flask.elements.length>0&&Math.random()<0.04+flask.heat*0.002){
+    bubbles.push({x:FX+(Math.random()-0.5)*FW*0.45,y:FY-FH*0.05,
+      r:3+Math.random()*5,vy:-(0.4+Math.random()*1),
+      color:flask.elements[Math.floor(Math.random()*flask.elements.length)].color,
+      life:50+Math.random()*40});
+  }
+  // Heat dissipates
+  if(flask.heat>0&&Math.random()<0.02)flask.heat=Math.max(0,flask.heat-0.5);
+  if(flask.electric>0&&Math.random()<0.05)flask.electric=Math.max(0,flask.electric-1);
+}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  drawLabBg();
+  ctx.save();
+  ctx.translate(shakeX,0);
+  drawFlask();
+  drawParticles();
+  ctx.restore();
+  drawElementIcons();
+  drawToolIndicator();
+}
+
+function drawLabBg(){
+  // Dark lab background
+  ctx.fillStyle='#06080f';ctx.fillRect(0,0,W,H);
+  // Lab bench surface
+  const benchY=H*0.82;
+  const bg=ctx.createLinearGradient(0,benchY,0,H);
+  bg.addColorStop(0,'#1a1610');bg.addColorStop(1,'#0d0c08');
+  ctx.fillStyle=bg;ctx.fillRect(0,benchY,W,H-benchY);
+  ctx.strokeStyle='rgba(255,200,100,0.15)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(0,benchY);ctx.lineTo(W,benchY);ctx.stroke();
+  // Grid lines on bench
+  ctx.strokeStyle='rgba(255,255,255,0.03)';ctx.lineWidth=1;
+  for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,benchY);ctx.lineTo(x,H);ctx.stroke();}
+  // Ambient glow from flask
+  if(flask.elements.length>0){
+    const col=currentReaction?currentReaction.color:flask.elements[0].color;
+    const g=ctx.createRadialGradient(FX,FY,0,FX,FY,FW*1.5);
+    g.addColorStop(0,col+'18');g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  }
+}
+
+function drawFlask(){
+  getFlaskGeometry();
+  const cx=FX,cy=FY,fw=FW,fh=FH;
+
+  // Liquid fill color
+  let liquidCol='rgba(30,40,60,0.7)';
+  let liquidCol2='rgba(20,30,50,0.5)';
+  if(flask.elements.length>0){
+    // Blend element colors
+    let r=0,g=0,b=0;
+    flask.elements.forEach(el=>{
+      const n=parseInt(el.color.replace('#',''),16);
+      r+=(n>>16)&255;g+=(n>>8)&255;b+=n&255;
+    });
+    const n=flask.elements.length;
+    r=Math.floor(r/n);g=Math.floor(g/n);b=Math.floor(b/n);
+    liquidCol=`rgba(${r},${g},${b},0.85)`;
+    liquidCol2=`rgba(${Math.min(255,r+40)},${Math.min(255,g+40)},${Math.min(255,b+40)},0.6)`;
+  }
+  if(currentReaction){liquidCol=currentReaction.color+'dd';liquidCol2=currentReaction.color+'88';}
+
+  // ── FLASK SHAPE ──────────────────────────────────────────
+  const liquidLevel=0.55+Math.min(flask.elements.length*0.06,0.25);
+
+  // Shadow
+  ctx.save();
+  ctx.shadowColor='rgba(0,0,0,0.5)';ctx.shadowBlur=30;ctx.shadowOffsetY=8;
+  ctx.fillStyle='rgba(0,0,0,0.01)';
+  drawFlaskShape(cx,cy,fw,fh,NECK_Y,NECK_W);ctx.fill();
+  ctx.restore();
+
+  // Draw liquid (clipped inside flask)
+  ctx.save();
+  drawFlaskShape(cx,cy,fw,fh,NECK_Y,NECK_W);ctx.clip();
+
+  // Liquid background
+  const liquidY=cy-fh*0.5+fh*(1-liquidLevel)*0.9;
+  const lg=ctx.createLinearGradient(cx-fw*0.5,liquidY,cx+fw*0.5,cy+fh*0.5);
+  lg.addColorStop(0,liquidCol2);lg.addColorStop(0.5,liquidCol);lg.addColorStop(1,darken3(liquidCol,30));
+  ctx.fillStyle=lg;
+  // Wavy surface
+  ctx.beginPath();
+  const waveAmp=flask.elements.length>0?3+Math.sin(animT*2)*2:1;
+  ctx.moveTo(cx-fw,liquidY);
+  for(let x=-fw;x<=fw;x+=8){
+    const wy=liquidY+Math.sin((x/fw)*Math.PI*3+animT*2)*waveAmp;
+    ctx.lineTo(cx+x,wy);
+  }
+  ctx.lineTo(cx+fw,cy+fh*0.6);ctx.lineTo(cx-fw,cy+fh*0.6);ctx.closePath();
+  ctx.fill();
+
+  // Bubbles
+  bubbles.forEach(b=>{
+    const alpha=b.life/80;
+    ctx.strokeStyle=b.color+(Math.floor(alpha*255).toString(16).padStart(2,'0'));
+    ctx.lineWidth=1.5;ctx.fillStyle=b.color+'22';
+    ctx.beginPath();ctx.arc(b.x+shakeX*0.3,b.y,b.r,0,Math.PI*2);ctx.fill();ctx.stroke();
+  });
+
+  // Swirl pattern inside liquid
+  if(flask.elements.length>1){
+    ctx.globalAlpha=0.12;
+    for(let i=0;i<3;i++){
+      const r2=fw*(0.12+i*0.08),a=animT*1.5+i*Math.PI*2/3;
+      const sg=ctx.createRadialGradient(cx+Math.cos(a)*r2,cy+Math.sin(a)*r2*0.5,0,cx,cy,fw*0.5);
+      sg.addColorStop(0,flask.elements[i%flask.elements.length]?.color||'#fff');
+      sg.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=sg;ctx.fillRect(cx-fw,cy-fh*0.5,fw*2,fh);
+    }
+    ctx.globalAlpha=1;
+  }
+  ctx.restore();
+
+  // Flask glass walls
+  ctx.save();
+  // Glass gradient
+  const gg=ctx.createLinearGradient(cx-fw*0.55,cy,cx+fw*0.55,cy);
+  gg.addColorStop(0,'rgba(255,255,255,0.18)');gg.addColorStop(0.15,'rgba(255,255,255,0.06)');
+  gg.addColorStop(0.85,'rgba(255,255,255,0.04)');gg.addColorStop(1,'rgba(255,255,255,0.15)');
+  ctx.strokeStyle=gg;ctx.lineWidth=2.5;
+  drawFlaskShape(cx,cy,fw,fh,NECK_Y,NECK_W);ctx.stroke();
+
+  // Highlight (left side)
+  ctx.strokeStyle='rgba(255,255,255,0.22)';ctx.lineWidth=3;
+  ctx.beginPath();
+  ctx.moveTo(cx-fw*0.38,NECK_Y+20);
+  ctx.quadraticCurveTo(cx-fw*0.56,cy-fh*0.1,cx-fw*0.44,cy+fh*0.2);
+  ctx.stroke();
+
+  // Heat glow
+  if(flask.heat>20){
+    ctx.shadowColor='#ff6600';ctx.shadowBlur=fw*0.3*(flask.heat/100);
+    drawFlaskShape(cx,cy+fh*0.3,fw*0.8,fh*0.3,NECK_Y,NECK_W);
+    ctx.strokeStyle=`rgba(255,100,0,${flask.heat/200})`;ctx.lineWidth=8;ctx.stroke();
+  }
+  // Electric glow
+  if(flask.electric>20){
+    ctx.shadowColor='#ffee44';ctx.shadowBlur=fw*0.2*(flask.electric/100);
+    drawFlaskShape(cx,cy,fw,fh,NECK_Y,NECK_W);
+    ctx.strokeStyle=`rgba(255,238,68,${flask.electric/200})`;ctx.lineWidth=4;ctx.stroke();
+  }
+  ctx.shadowBlur=0;
+
+  // Flask stopper / neck
+  const neckX=cx-NECK_W*0.5;
+  ctx.fillStyle='rgba(180,160,100,0.6)';
+  ctx.beginPath();ctx.roundRect(neckX-4,NECK_Y-20,NECK_W+8,24,4);ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.2)';ctx.lineWidth=1;ctx.stroke();
+  ctx.restore();
+
+  // Reaction glow aura
+  if(currentReaction){
+    const rcol=currentReaction.color;
+    const pulse=0.6+0.4*Math.sin(animT*3);
+    ctx.save();
+    ctx.shadowColor=rcol;ctx.shadowBlur=fw*0.5*pulse;
+    drawFlaskShape(cx,cy,fw,fh,NECK_Y,NECK_W);
+    ctx.strokeStyle=rcol+(Math.floor(pulse*120).toString(16).padStart(2,'0'));
+    ctx.lineWidth=3;ctx.stroke();
+    ctx.shadowBlur=0;ctx.restore();
+  }
+}
+
+function drawFlaskShape(cx,cy,fw,fh,ny,nw){
+  // Erlenmeyer flask shape
+  ctx.beginPath();
+  ctx.moveTo(cx-nw*0.5,ny);
+  // Neck down to shoulder
+  ctx.lineTo(cx-nw*0.5,ny+fh*0.06);
+  // Shoulder curve left
+  ctx.quadraticCurveTo(cx-fw*0.52,cy-fh*0.22,cx-fw*0.52,cy);
+  // Bottom curve
+  ctx.quadraticCurveTo(cx-fw*0.5,cy+fh*0.5,cx,cy+fh*0.52);
+  ctx.quadraticCurveTo(cx+fw*0.5,cy+fh*0.5,cx+fw*0.52,cy);
+  // Shoulder curve right
+  ctx.quadraticCurveTo(cx+fw*0.52,cy-fh*0.22,cx+nw*0.5,ny+fh*0.06);
+  ctx.lineTo(cx+nw*0.5,ny);
+  ctx.closePath();
+}
+
+function drawParticles(){
+  particles.forEach(p=>{
+    const a=p.life/p.maxLife;
+    if(p.type==='lightning'){
+      // Lightning bolt
+      ctx.strokeStyle=`rgba(255,238,68,${a})`;ctx.lineWidth=2;
+      ctx.shadowColor='#ffee44';ctx.shadowBlur=8;
+      ctx.beginPath();ctx.moveTo(p.x,p.y-30);
+      for(let s=0;s<5;s++){ctx.lineTo(p.x+(Math.random()-0.5)*20,p.y-30+s*12);}
+      ctx.lineTo(p.ex,p.ey);ctx.stroke();ctx.shadowBlur=0;
+      return;
+    }
+    if(p.type==='ice'){
+      // Snowflake
+      ctx.strokeStyle=`rgba(136,221,255,${a*0.8})`;ctx.lineWidth=1.5;
+      for(let i=0;i<6;i++){const sa=i*Math.PI/3;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x+Math.cos(sa)*p.r*1.5,p.y+Math.sin(sa)*p.r*1.5);ctx.stroke();}
+      return;
+    }
+    ctx.globalAlpha=a;
+    ctx.fillStyle=p.color;
+    ctx.shadowColor=p.color;ctx.shadowBlur=p.r*2;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.r*a,0,Math.PI*2);ctx.fill();
+    ctx.shadowBlur=0;
+  });
+  ctx.globalAlpha=1;
+}
+
+function drawElementIcons(){
+  if(flask.elements.length===0)return;
+  // Draw element badges floating above flask
+  const n=flask.elements.length;
+  const startX=FX-(n-1)*22;
+  flask.elements.forEach((el,i)=>{
+    const ex=startX+i*44;
+    const ey=NECK_Y-35-Math.sin(animT+i)*4;
+    // Bubble
+    ctx.fillStyle=el.color+'33';ctx.strokeStyle=el.color+'88';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.arc(ex,ey,18,0,Math.PI*2);ctx.fill();ctx.stroke();
+    // Icon
+    ctx.font='14px serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(el.icon,ex,ey);
+    // X button
+    ctx.fillStyle='rgba(255,80,80,0.6)';ctx.beginPath();ctx.arc(ex+13,ey-13,6,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#fff';ctx.font='bold 8px Arial';ctx.fillText('×',ex+13,ey-13);
+    ctx.textAlign='left';ctx.textBaseline='alphabetic';
+  });
+}
+
+function drawToolIndicator(){
+  const tools={stir:'🌀',heat:'🔥',cool:'❄️',shock:'⚡',shake:'📳',pour:'💧'};
+  const icon=tools[activeTool]||'🌀';
+  ctx.font=`${Math.max(18,W*0.03)}px serif`;
+  ctx.textAlign='right';ctx.textBaseline='bottom';
+  ctx.globalAlpha=0.35;
+  ctx.fillText(icon,W-8,H-8);
+  ctx.globalAlpha=1;
+  ctx.textAlign='left';ctx.textBaseline='alphabetic';
+}
+
+// Remove element on X click
+canvas.addEventListener('click',e=>{
+  const p=getCanvasXY(e);
+  const n=flask.elements.length;
+  const startX=FX-(n-1)*22;
+  flask.elements.forEach((el,i)=>{
+    const ex=startX+i*44,ey=NECK_Y-35;
+    if(Math.hypot(p.x-(ex+13),p.y-(ey-13))<8){
+      flask.elements.splice(i,1);
+      currentReaction=null;checkReaction();updateBadge();
+      addLog(`- ${el.icon} ${el.name} removido`,'#ff8888');
+    }
+  });
+});
+
+function darken3(col,amt){
+  // Simple darken for rgb string
+  return col.replace(/rgba?\((\d+),(\d+),(\d+)/,(_,r,g,b)=>`rgb(${Math.max(0,r-amt)},${Math.max(0,g-amt)},${Math.max(0,b-amt)}`);
+}
+
+function initLab(){
+  buildShelf();
+  addLog('⚗️ Laboratorio listo.','#00ccff');
+  addLog('💡 Combina elementos y usa herramientas.','#888888');
+  addLog(`🔍 ${REACTIONS.length} reacciones posibles.`,'#444');
+}
+</script>
+</body>
+</html>
